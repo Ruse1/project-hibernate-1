@@ -1,9 +1,9 @@
 package com.game.repository;
 
 import com.game.entity.Player;
-import jakarta.persistence.PreRemove;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.query.NativeQuery;
@@ -59,25 +59,56 @@ public class PlayerRepositoryDB implements IPlayerRepository {
 
     @Override
     public Player save(Player player) {
-        return null;
+        Transaction transaction = null;
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(player);
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+        }
+        return player;
     }
 
     @Override
     public Player update(Player player) {
-        return null;
+        Player updatePlayer;
+        try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
+//            updatePlayer = (Player) session.merge(player);
+            updatePlayer = session.find(Player.class, player.getId());
+            updatePlayer.setName(player.getName());
+            updatePlayer.setTitle(player.getTitle());
+            updatePlayer.setRace(player.getRace());
+            updatePlayer.setProfession(player.getProfession());
+            updatePlayer.setBirthday(player.getBirthday());
+            updatePlayer.setBanned(player.getBanned());
+            updatePlayer.setLevel(player.getLevel());
+            transaction.commit();
+        }
+        return updatePlayer;
     }
 
     @Override
     public Optional<Player> findById(long id) {
-        return Optional.empty();
+        try (Session session = sessionFactory.openSession()) {
+            Optional<Player> player = Optional.of(session.find(Player.class, id));
+            return player;
+        }
     }
 
     @Override
     public void delete(Player player) {
-
+        try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.remove(player);
+            transaction.commit();
+        }
     }
 
-    @PreRemove
+    //    @PreDestroy
     public void beforeStop() {
         sessionFactory.close();
     }

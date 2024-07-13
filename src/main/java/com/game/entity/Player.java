@@ -9,6 +9,8 @@ import java.util.Date;
 @NamedQuery(name = "getAllCount", query = "SELECT COUNT(*) FROM Player")
 public class Player {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO, generator = "player_seq")
+    @SequenceGenerator(name = "player_seq", sequenceName = "player_seq", initialValue = 41, allocationSize = 1)
     private Long id;
 
     @Column(name = "name", nullable = false, length = 12)
