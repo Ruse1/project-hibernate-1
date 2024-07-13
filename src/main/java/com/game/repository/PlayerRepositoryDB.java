@@ -2,11 +2,15 @@ package com.game.repository;
 
 import com.game.entity.Player;
 import jakarta.persistence.PreRemove;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.query.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -32,12 +36,25 @@ public class PlayerRepositoryDB implements IPlayerRepository {
 
     @Override
     public List<Player> getAll(int pageNumber, int pageSize) {
-        return null;
+        List<Player> allPlayers = new ArrayList<>();
+        String nativeSQL = "SELECT * FROM rpg.player LIMIT :pageSize OFFSET :pageNumber";
+        try (Session session = sessionFactory.openSession()) {
+            NativeQuery<Player> query = session.createNativeQuery(nativeSQL, Player.class);
+            query.setParameter("pageNumber", pageNumber * pageSize);
+            query.setParameter("pageSize", pageSize);
+            allPlayers = query.list();
+        }
+        return allPlayers;
     }
 
     @Override
     public int getAllCount() {
-        return 0;
+        long count = 0L;
+        try (Session session = sessionFactory.openSession()) {
+            Query<Long> query = session.createNamedQuery("getAllCount", Long.class);
+            count = query.getSingleResult();
+        }
+        return (int) count;
     }
 
     @Override
@@ -62,6 +79,6 @@ public class PlayerRepositoryDB implements IPlayerRepository {
 
     @PreRemove
     public void beforeStop() {
-
+        sessionFactory.close();
     }
 }
