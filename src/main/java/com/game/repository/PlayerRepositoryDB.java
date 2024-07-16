@@ -17,13 +17,13 @@ import java.util.Properties;
 
 @Repository(value = "db")
 public class PlayerRepositoryDB implements IPlayerRepository {
-    private SessionFactory sessionFactory;
+    private final SessionFactory sessionFactory;
 
     public PlayerRepositoryDB() {
         Properties prop = new Properties();
         prop.put(Environment.DIALECT, "org.hibernate.dialect.MySQL8Dialect");
-        prop.put(Environment.DRIVER, "com.mysql.jdbc.Driver");
-        prop.put(Environment.URL, "jdbc:mysql://localhost:3306/rpg");
+        prop.put(Environment.DRIVER, "com.p6spy.engine.spy.P6SpyDriver");
+        prop.put(Environment.URL, "jdbc:p6spy:mysql://localhost:3306/rpg");
         prop.put(Environment.USER, "root");
         prop.put(Environment.PASS, "mysql");
         prop.put(Environment.SHOW_SQL, true);
@@ -54,7 +54,7 @@ public class PlayerRepositoryDB implements IPlayerRepository {
             Query<Long> query = session.createNamedQuery("getAllCount", Long.class);
             count = query.getSingleResult();
         }
-        return (int) count;
+        return Math.toIntExact(count);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class PlayerRepositoryDB implements IPlayerRepository {
         Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            session.persist(player);
+            session.save(player);
             transaction.commit();
         } catch (Exception e) {
             if (transaction != null) {
@@ -78,24 +78,17 @@ public class PlayerRepositoryDB implements IPlayerRepository {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
 //            updatePlayer = (Player) session.merge(player);
-            updatePlayer = session.find(Player.class, player.getId());
-            updatePlayer.setName(player.getName());
-            updatePlayer.setTitle(player.getTitle());
-            updatePlayer.setRace(player.getRace());
-            updatePlayer.setProfession(player.getProfession());
-            updatePlayer.setBirthday(player.getBirthday());
-            updatePlayer.setBanned(player.getBanned());
-            updatePlayer.setLevel(player.getLevel());
+            session.saveOrUpdate(player);
             transaction.commit();
         }
-        return updatePlayer;
+        return player;
     }
 
     @Override
     public Optional<Player> findById(long id) {
         try (Session session = sessionFactory.openSession()) {
-            Optional<Player> player = Optional.of(session.find(Player.class, id));
-            return player;
+            Player playerById = session.find(Player.class, id);
+            return Optional.of(playerById);
         }
     }
 
